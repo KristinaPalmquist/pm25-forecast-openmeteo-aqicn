@@ -6,6 +6,8 @@
 # misc
 .DS_Store
 *.pem
+__pycache__
+.cache.sqlite
 
 # env
 .env*
