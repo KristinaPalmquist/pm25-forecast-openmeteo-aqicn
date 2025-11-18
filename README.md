@@ -58,7 +58,7 @@ Run the notebooks sequentially (`1_backfill` -> `4_batch_inference`) the first t
 
 ### `3_training.ipynb` Model Training + Registry
 1. Reads the enriched features from the feature store (via feature views) for each sensor ID.
-2. Trains an `XGBRegressor` per sensor, using the all different feature set produced above (rolling, lags, nearby averages, weather) and combinations.
+2. Trains multiple `XGBRegressor` models per sensor, using different feature sets (rolling, lags, nearby averages, weather), combinations and a baseline.
 3. Measures the R^2 and MSE across all models and selects the model with the highest R^2.
 4. Saves the best model artifacts to `models/<sensor_id>/` (`model.json`, feature-importance plots, hindcast during training).
 5. Registers each model in the Hopsworks Model Registry under `air_quality_xgboost_model_<sensor_id>`, storing metadata like:

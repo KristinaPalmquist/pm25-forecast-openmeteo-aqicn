@@ -32,9 +32,44 @@ def push_results():
     subprocess.run(["git", "config", "user.email", "modal@example.com"], check=True)
     subprocess.run(["git", "config", "user.name", "Modal Bot"], check=True)
 
-    # Create images directory if it doesn't exist
-    images_dir = Path("images")
-    images_dir.mkdir(exist_ok=True)
+    # Copy images from /root/models to cloned repo, replacing existing ones
+    source_models_dir = Path("../models")
+    dest_models_dir = Path("models")
+    
+    if source_models_dir.exists():
+        # Copy sensor images, replacing existing forecast.png and hindcast_prediction.png
+        for sensor_dir in source_models_dir.glob("*/images"):
+            sensor_id = sensor_dir.parent.name
+            dest_sensor_dir = dest_models_dir / sensor_id / "images"
+            dest_sensor_dir.mkdir(parents=True, exist_ok=True)
+            
+            for img_name in ["forecast.png", "hindcast_prediction.png"]:
+                old_img = dest_sensor_dir / img_name
+                if old_img.exists():
+                    old_img.unlink()
+            
+            for img_name in ["forecast.png", "hindcast_prediction.png"]:
+                source_img = sensor_dir / img_name
+                if source_img.exists():
+                    shutil.copy(source_img, dest_sensor_dir / img_name)
+        
+        source_interpolation_dir = source_models_dir / "interpolation"
+        if source_interpolation_dir.exists():
+            dest_interpolation_dir = dest_models_dir / "interpolation"
+            dest_interpolation_dir.mkdir(parents=True, exist_ok=True)
+            for interp_img in source_interpolation_dir.glob("forecast_interpolation_*.png"):
+                dest_img = dest_interpolation_dir / interp_img.name
+                if dest_img.exists():
+                    dest_img.unlink()
+                shutil.copy(interp_img, dest_img)
+        
+        predictions_file = source_models_dir / "predictions.csv"
+        dest_predictions_file = dest_models_dir / "predictions.csv"
+        if dest_predictions_file.exists():
+            dest_predictions_file.unlink()
+        shutil.copy(predictions_file, dest_predictions_file)
+        
+        print(f"Copied images from {source_models_dir} to {dest_models_dir}")
 
     # Add all changes
     subprocess.run(["git", "add", "models/"], check=True)

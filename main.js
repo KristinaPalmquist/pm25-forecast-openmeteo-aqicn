@@ -9,11 +9,10 @@ const config = {
 };
 
 const AQI_COLORS = ['#00e400', '#ffff00', '#ff7e00', '#ff0000'];
-const AQI_THRESHOLDS = [16, 32, 49];
+const AQI_THRESHOLDS = [50, 100, 150];
 
 const ui = {
-  daySlider: document.getElementById('forecast-slider'),
-  sliderValue: document.getElementById('slider-value'),
+  dayDropdown: document.getElementById('forecast-dropdown'),
   sensorToggle: document.getElementById('toggle-sensors'),
   overlayToggle: document.getElementById('toggle-overlay'),
   focusPanel: document.getElementById('focus-panel'),
@@ -33,7 +32,7 @@ const ui = {
 };
 
 const state = {
-  currentDay: Number(ui.daySlider?.value ?? config.forecastDays[0]),
+  currentDay: Number(ui.dayDropdown?.value ?? config.forecastDays[0]),
   sensorData: {},
   csvHeaders: [],
   markers: [],
@@ -72,13 +71,16 @@ const map = new maplibregl.Map({
 map.addControl(new maplibregl.NavigationControl(), 'top-right');
 
 function init() {
-  updateSliderLabel(state.currentDay);
-  if (ui.daySlider && !ui.daySlider.value) ui.daySlider.value = String(state.currentDay);
+  populateDropdown();
+  if (ui.dayDropdown) ui.dayDropdown.value = String(state.currentDay);
 
-  ui.daySlider?.addEventListener('input', (e) => {
+  ui.dayDropdown?.addEventListener('change', (e) => {
     const day = Number(e.target.value);
-    updateSliderLabel(day);
+    state.currentDay = day;
     loadRaster(day);
+    if (state.activeMarkerEl && ui.focusDetailsBtn?.dataset?.sensorId) {
+      updateFocusPanelValue(ui.focusDetailsBtn.dataset.sensorId);
+    }
   });
 
   ui.overlayToggle?.addEventListener('change', () => {
@@ -124,13 +126,21 @@ function formatDateLabel(dateStr) {
 
 function formatDayLabel(day) {
   const formatted = formatDateLabel(state.dayDates?.[day]);
-  if (formatted) return day === 0 ? `observed ${formatted}` : `forecast ${formatted}`;
-  return '';
+  if (formatted) return day === 0 ? `Observed ${formatted}` : `Forecast ${formatted}`;
+  return `Day ${day}`;
 }
 
-function updateSliderLabel(day) {
-  state.currentDay = day;
-  if (ui.sliderValue) ui.sliderValue.textContent = formatDayLabel(day);
+function populateDropdown() {
+  if (!ui.dayDropdown) return;
+  ui.dayDropdown.innerHTML = '';
+  config.forecastDays.forEach((day) => {
+    if (day === 0 || state.dayDates[day]) {
+      const option = document.createElement('option');
+      option.value = String(day);
+      option.textContent = formatDayLabel(day);
+      ui.dayDropdown.appendChild(option);
+    }
+  });
 }
 
 function deriveDayDates(rows) {
@@ -160,7 +170,7 @@ function removeRasterLayer() {
 
 async function loadRaster(day) {
   state.currentDay = day;
-  if (ui.daySlider && ui.daySlider.value !== String(day)) ui.daySlider.value = String(day);
+  if (ui.dayDropdown) ui.dayDropdown.value = String(day);
   if (ui.overlayToggle && !ui.overlayToggle.checked) {
     removeRasterLayer();
     return;
@@ -231,7 +241,8 @@ async function loadCsvMarkers() {
     clearFocus();
     rows.forEach((row) => ingestRow(row));
     state.markers = Object.values(state.sensorData).map(createMarker);
-    updateSliderLabel(state.currentDay);
+    populateDropdown();
+    if (ui.dayDropdown) ui.dayDropdown.value = String(state.currentDay);
   } catch (error) {
     console.error('Failed to load predictions CSV', error);
   }
@@ -251,7 +262,7 @@ function ingestRow(row) {
   }
 
   const entry = state.sensorData[sensorId];
-  if ((!Number.isFinite(entry.lat) || !Number.isFinite(entry.lon)) && Number.isFinite(lat) && Number.isFinite(lon)) {
+  if (!Number.isFinite(entry.lat) || !Number.isFinite(entry.lon)) {
     entry.lat = lat;
     entry.lon = lon;
   }
@@ -298,10 +309,9 @@ function createMarker(entry) {
 
 function showFocusPanel() {
   if (!ui.focusPanel) return;
-  const isVisible = ui.focusPanel.style.display === 'flex';
   ui.focusPanel.style.display = 'flex';
   requestAnimationFrame(() => {
-    ui.focusPanel.style.opacity = isVisible ? '1' : '1';
+    ui.focusPanel.style.opacity = '1';
   });
 }
 
@@ -323,6 +333,42 @@ function hideFocusPanel() {
   }, 100);
 }
 
+function getValueForDay(data, day) {
+  if (!data.rows?.length) return null;
+  
+  const row = day === 0
+    ? data.rows.find((r) => r.date === state.dayDates[0])
+    : data.rows.find((r) => Number(r.days_before_forecast_day ?? r.daysBeforeForecastDay ?? 'NaN') === day);
+  
+  if (!row) return null;
+  
+  const value = day === 0
+    ? parseFloat(row.pm25 ?? 'NaN')
+    : parseFloat(row.predicted_pm25 ?? row.predicted ?? 'NaN');
+  
+  return Number.isFinite(value) ? value : null;
+}
+
+function updateFocusPanelValue(sensorId) {
+  const data = state.sensorData[sensorId];
+  if (!data) return;
+  
+  const dayValue = getValueForDay(data, state.currentDay);
+  const valueText = Number.isFinite(dayValue) ? `${dayValue.toFixed(1)} µg/m<sup>3</sup>` : 'No value';
+  
+  if (ui.focusName) {
+    const parts = [data.street || '', data.city || ''].filter(Boolean);
+    const name = parts.length ? parts.join(', ') : data.sensorId;
+    ui.focusName.innerHTML = `${name}, ${valueText}`;
+  }
+  
+  if (ui.focusMeta) {
+    const lat = Number.isFinite(data.lat) ? data.lat.toFixed(4) : '—';
+    const lon = Number.isFinite(data.lon) ? data.lon.toFixed(4) : '—';
+    ui.focusMeta.textContent = `Lat ${lat}, Lon ${lon}, ID ${data.sensorId ?? '—'}`;
+  }
+}
+
 function focusOnSensor(sensorId, markerEl) {
   const data = state.sensorData[sensorId];
   if (!data) return;
@@ -333,15 +379,8 @@ function focusOnSensor(sensorId, markerEl) {
   state.activeMarkerEl = markerEl;
   markerEl.classList.add('is-active');
 
-  if (ui.focusName) {
-    const parts = [data.street || '', data.city || ''].filter(Boolean);
-    ui.focusName.textContent = parts.length ? parts.join(', ') : data.sensorId;
-  }
-  if (ui.focusMeta) {
-    const lat = Number.isFinite(data.lat) ? data.lat.toFixed(4) : '—';
-    const lon = Number.isFinite(data.lon) ? data.lon.toFixed(4) : '—';
-    ui.focusMeta.textContent = `Lat ${lat}, Lon ${lon}, ID ${data.sensorId ?? '—'}`;
-  }
+  updateFocusPanelValue(sensorId);
+  
   if (ui.focusDetailsBtn) {
     ui.focusDetailsBtn.disabled = !(data.rows && data.rows.length);
     ui.focusDetailsBtn.dataset.sensorId = data.sensorId;
@@ -428,10 +467,10 @@ function closeDetailsModal() {
 function renderDetailsTable(entry) {
   if (!ui.detailsTableHead || !ui.detailsTableBody) return;
   const headers = (state.csvHeaders.length ? state.csvHeaders : Object.keys(entry.rows[0] || {})).filter((h) => !hiddenColumns.has(h));
+  if (!headers.length) return;
 
   ui.detailsTableHead.innerHTML = '';
   ui.detailsTableBody.innerHTML = '';
-  if (!headers.length) return;
 
   const headRow = document.createElement('tr');
   headers.forEach((h) => {
@@ -445,7 +484,10 @@ function renderDetailsTable(entry) {
     const tr = document.createElement('tr');
     headers.forEach((h) => {
       const td = document.createElement('td');
-      td.textContent = row[h] ?? '';
+      const value = row[h] ?? '';
+      const isDateColumn = h.toLowerCase() === 'date';
+      const numValue = parseFloat(value);
+      td.textContent = !isDateColumn && Number.isFinite(numValue) ? numValue.toFixed(3) : value;
       tr.appendChild(td);
     });
     ui.detailsTableBody.appendChild(tr);

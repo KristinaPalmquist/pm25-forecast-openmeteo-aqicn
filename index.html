@@ -16,7 +16,7 @@
       <div id="map" class="h-full w-full"></div>
       <div class="absolute left-4 top-4 z-10 flex flex-col gap-4">
         <aside
-          class="flex w-80 flex-col gap-4 rounded-2xl border border-white/40 bg-white/60 p-4 text-sm backdrop-blur-lg"
+          class="flex w-96 flex-col gap-4 rounded-2xl border border-white/40 bg-white/60 p-4 text-sm backdrop-blur-lg"
         >
           <section class="flex flex-col gap-2">
             <h2 class="text-base font-semibold">Map options</h2>
@@ -29,28 +29,21 @@
               <span>Show air quality overlay</span>
             </label>
             <label class="flex flex-col gap-1 text-sm">
-              <span class="flex items-center gap-1">
-                <span>Showing</span>
-                <span id="slider-value" class="font-medium"></span>
-              </span>
-              <input
-                type="range"
-                id="forecast-slider"
-                min="0"
-                max="6"
-                step="1"
-                value="0"
-                class="w-full cursor-pointer"
-              />
+              <span>Showing</span>
+              <select
+                id="forecast-dropdown"
+                class="w-full rounded-lg border border-white/40 bg-white/70 px-3 py-2 text-sm"
+              >
+              </select>
             </label>
           </section>
           <section>
             <h2 class="mb-2 text-base font-semibold">PM<sub>2.5</sub> concentrations</h2>
             <ul class="legend flex flex-col gap-1 text-sm">
-              <li><span class="color good"></span> 0-16 µg/m<sup>3</sup></li>
-              <li><span class="color moderate"></span> 16-32 µg/m<sup>3</sup></li>
-              <li><span class="color unhealthy"></span> 33-49 µg/m<sup>3</sup></li>
-              <li><span class="color very-unhealthy"></span> 50+ µg/m<sup>3</sup></li>
+              <li><span class="color good"></span> 0-50 µg/m<sup>3</sup></li>
+              <li><span class="color moderate"></span> 50-100 µg/m<sup>3</sup></li>
+              <li><span class="color unhealthy"></span> 100-150 µg/m<sup>3</sup></li>
+              <li><span class="color very-unhealthy"></span> 150+ µg/m<sup>3</sup></li>
             </ul>
           </section>
         </aside>
@@ -58,7 +51,7 @@
         <aside
           id="focus-panel"
           style="display: none;"
-          class="flex w-80 flex-col gap-3 rounded-2xl border border-white/40 bg-white/70 p-4 text-sm backdrop-blur-lg"
+          class="flex w-96 flex-col gap-3 rounded-2xl border border-white/40 bg-white/70 p-4 text-sm backdrop-blur-lg"
         >
           <div id="focus-name" class="text-base font-semibold">Select a station</div>
           <p id="focus-meta" class="text-xs select-none -mt-1">Lat -, Lon -, ID -</p>
