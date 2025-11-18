@@ -26,13 +26,12 @@
               </label>
             <label class="flex items-center gap-2 text-sm">
               <input type="checkbox" id="toggle-overlay" checked class="h-4 w-4 rounded" />
-              <span>Show overlay</span>
+              <span>Show air quality overlay</span>
             </label>
             <label class="flex flex-col gap-1 text-sm">
-              <span class="flex items-center">
-                <span>Overlay forecast horizon (</span>
-                <span id="slider-value">Today</span>
-                <span>)</span>
+              <span class="flex items-center gap-1">
+                <span>Showing</span>
+                <span id="slider-value" class="font-medium"></span>
               </span>
               <input
                 type="range"
@@ -48,10 +47,10 @@
           <section>
             <h2 class="mb-2 text-base font-semibold">Legend</h2>
             <ul class="legend flex flex-col gap-1 text-sm">
-              <li><span class="color good"></span> Good (0–50)</li>
-              <li><span class="color moderate"></span> Moderate (51–100)</li>
-              <li><span class="color unhealthy"></span> Unhealthy (101–150)</li>
-              <li><span class="color very-unhealthy"></span> Very Unhealthy (151+)</li>
+              <li><span class="color level-0"></span> 0-16 µg/m<sup>3</sup></li>
+              <li><span class="color level-2"></span> 16-32 µg/m<sup>3</sup></li>
+              <li><span class="color level-4"></span> 33-49 µg/m<sup>3</sup></li>
+              <li><span class="color level-6"></span> 50+ µg/m<sup>3</sup></li>
             </ul>
           </section>
         </aside>
