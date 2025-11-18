@@ -18,21 +18,23 @@ jobs:
       - name: checkout repo content
         uses: actions/checkout@v4
 
-      - name: setup uv
-        uses: astral-sh/setup-uv@v7
+      - name: setup python
+        uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-    
+          cache: 'pip'
       - name: install python packages
-        run: uv run sync
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
 
       - name: execute python workflows from bash script
         env:
           HOPSWORKS_API_KEY: ${{ secrets.HOPSWORKS_API_KEY }}
           AQICN_API_KEY: ${{ secrets.AQICN_API_KEY }}
         run: |
-          uv run ipython notebooks/2_feature_pipeline.ipynb
-          uv run ipython notebooks/4_batch_inference.ipynb
+          ipython notebooks/2_feature_pipeline.ipynb
+          ipython notebooks/4_batch_inference.ipynb
       - name: github pages publish
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
