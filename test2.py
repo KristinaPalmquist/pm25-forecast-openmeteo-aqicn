@@ -2,6 +2,7 @@
 # Posted by Daniel Morgan, modified by community. See post 'Timeline' for change history
 # Retrieved 2025-11-28, License - CC BY-SA 4.0
 
+from urllib import response
 import pandas as pd
 import requests
 from dotenv import load_dotenv
@@ -45,6 +46,7 @@ from datetime import datetime, timedelta
 if not os.path.exists('historical'):
     os.makedirs('historical')
 
+
 def get_station_historical_data(station_uid, station_name, days_back=30):
     """Get historical data for a specific station and save as CSV"""
     print(f"Fetching historical data for {station_name} (ID: {station_uid})...")
@@ -57,44 +59,24 @@ def get_station_historical_data(station_uid, station_name, days_back=30):
         data = response.json()
         
         if data['status'] == 'ok':
-            # Get current data point
+            # Safely get values from iaqi
+            iaqi = data['data'].get('iaqi', {})
+            
             current_data = {
                 'date': datetime.now().strftime('%Y-%m-%d %H:%M'),
                 'station_id': station_uid,
                 'station_name': station_name,
                 'aqi': data['data'].get('aqi', None),
-                'pm25': data['data']['iaqi'].get('pm25', {}).get('v', None),
-                'pm10': data['data']['iaqi'].get('pm10', {}).get('v', None),
-                'o3': data['data']['iaqi'].get('o3', {}).get('v', None),
-                'no2': data['data']['iaqi'].get('no2', {}).get('v', None),
-                'so2': data['data']['iaqi'].get('so2', {}).get('v', None),
-                'co': data['data']['iaqi'].get('co', {}).get('v', None)
+                'pm25': iaqi.get('pm25', {}).get('v', None) if isinstance(iaqi.get('pm25'), dict) else None,
+                'pm10': iaqi.get('pm10', {}).get('v', None) if isinstance(iaqi.get('pm10'), dict) else None,
+                'o3': iaqi.get('o3', {}).get('v', None) if isinstance(iaqi.get('o3'), dict) else None,
+                'no2': iaqi.get('no2', {}).get('v', None) if isinstance(iaqi.get('no2'), dict) else None,
+                'so2': iaqi.get('so2', {}).get('v', None) if isinstance(iaqi.get('so2'), dict) else None,
+                'co': iaqi.get('co', {}).get('v', None) if isinstance(iaqi.get('co'), dict) else None
             }
             historical_data.append(current_data)
             
-            # Try to get forecast data if available
-            if 'forecast' in data['data']:
-                forecast = data['data']['forecast']
-                if 'daily' in forecast:
-                    for day_data in forecast['daily']:
-                        if 'pm25' in day_data:
-                            forecast_data = {
-                                'date': day_data['day'],
-                                'station_id': station_uid,
-                                'station_name': station_name,
-                                'aqi': None,
-                                'pm25_avg': day_data['pm25'][0].get('avg', None),
-                                'pm25_max': day_data['pm25'][0].get('max', None),
-                                'pm25_min': day_data['pm25'][0].get('min', None),
-                                'pm10': None,
-                                'o3': None,
-                                'no2': None,
-                                'so2': None,
-                                'co': None
-                            }
-                            historical_data.append(forecast_data)
-            
-            # Save to CSV file
+            # Save to CSV
             if historical_data:
                 df_historical = pd.DataFrame(historical_data)
                 filename = f"historical/station_{station_uid}_{station_name.replace(' ', '_').replace(',', '')}.csv"
@@ -106,7 +88,7 @@ def get_station_historical_data(station_uid, station_name, days_back=30):
         print(f"  Error fetching data for station {station_uid}: {e}")
         return 0
     
-    time.sleep(1)  # Rate limiting
+    time.sleep(1)
     return 0
 
 # Process all stations from your existing data
