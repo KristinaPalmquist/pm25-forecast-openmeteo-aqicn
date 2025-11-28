@@ -3,9 +3,9 @@ const config = {
   interpolationBase: './models/interpolation',
   interpolationTemplate: 'forecast_interpolation_{day}d.png',
   predictionsCsv: './models/predictions.csv',
-  mapBounds: [11.4, 57.15, 12.5, 58.25],
-  mapCenter: [11.9746, 57.7089],
-  mapZoom: 11,
+  mapBounds: [17.80, 59.20, 18.30, 59.45],
+  mapCenter: [18.0200, 59.3110],
+  mapZoom: 10,
 };
 
 const AQI_COLORS = ['#00e400', '#ffff00', '#ff7e00', '#ff0000'];
@@ -63,8 +63,8 @@ const map = new maplibregl.Map({
   zoom: config.mapZoom,
   maxZoom: 14,
   maxBounds: [
-    [config.mapBounds[0], config.mapBounds[1] + 0.3],
-    [config.mapBounds[2], config.mapBounds[3] - 0.3],
+    [config.mapBounds[0], config.mapBounds[1]],
+    [config.mapBounds[2], config.mapBounds[3]],
   ],
 });
 
